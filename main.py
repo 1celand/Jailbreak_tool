@@ -12,7 +12,6 @@ import requests
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
-app.secret_key = "jailbreak-lab"
 
 OLLAMA_BASE_DEFAULT = "http://localhost:11434"
 OLLAMA_PATH_DEFAULT = "/api/generate"
@@ -326,7 +325,6 @@ def parse_int(value: str, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, parsed))
 
 
-# ------------------ Flask 视图 ------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
     generated: List[Result] = []
