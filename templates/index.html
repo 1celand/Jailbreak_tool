@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>模型越狱生成器 by 1celand</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 32px 16px 64px;
+        }
+        h1 {
+            margin-bottom: 8px;
+        }
+        p.description {
+            color: #94a3b8;
+            margin-bottom: 24px;
+        }
+        form {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.8);
+        }
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56,189,248,0.3);
+        }
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 12px 0 6px;
+        }
+        .template-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+        label {
+            cursor: pointer;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .checkbox-row {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button {
+            background: linear-gradient(120deg, #2563eb, #9333ea);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 28px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.1s ease, opacity 0.2s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+        .results {
+            margin-top: 32px;
+            display: grid;
+            gap: 16px;
+        }
+        .result-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .result-card h3 {
+            margin: 0 0 8px;
+            font-size: 0.95rem;
+            color: #38bdf8;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .copy-btn {
+            background: #1d4ed8;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-size: 0.92rem;
+            color: #f1f5f9;
+        }
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+        }
+        .message.error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.4);
+            color: #fecaca;
+        }
+        .message.info {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #bfdbfe;
+        }
+        .history {
+            margin-top: 32px;
+            background: #1e293b;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .history-item {
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            background: #0f172a;
+        }
+        .history-item button {
+            background: #22d3ee;
+            color: #0f172a;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+        .export-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .export-row button {
+            background: #14b8a6;
+            padding: 10px 18px;
+            border-radius: 10px;
+        }
+        @media (max-width: 640px) {
+            form, .history {
+                padding: 16px;
+            }
+            .templates-grid {
+                grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>模型越狱生成器</h1>
+    <p class="description">多模板混合 + Ollama改写，构建多重绕过。</p>
+
+    <form method="POST">
+        <label for="raw_prompt">原始提示</label>
+        <textarea id="raw_prompt" name="raw_prompt" rows="5" placeholder="粘贴原始提示..." required>{{ raw_prompt }}</textarea>
+
+        <div style="margin-top: 16px;">
+            <strong>本地模板</strong>
+            <div class="templates-grid">
+                {% for name in templates.keys() %}
+                    <div class="template-item">
+                        <label>
+                            <input type="checkbox" name="templates" value="{{ name }}" {% if name in selected %}checked{% endif %}>
+                            <span>{{ name }}</span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            <small>若未选择，则默认使用全部模板。</small>
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="enable_mix" name="enable_mix" {% if combine_enabled %}checked{% endif %}>
+            <label for="enable_mix" style="margin:0;">启用模板交叉组合（自动配对）</label>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <label for="guide">Ollama 引导指令</label>
+            <textarea id="guide" name="guide" rows="4">{{ guide }}</textarea>
+        </div>
+
+        <div class="advanced-grid" style="margin-top: 16px;">
+            <div>
+                <label for="model">Ollama 模型</label>
+                <input type="text" id="model" name="model" value="{{ model }}" placeholder="llama3, mistral...">
+            </div>
+            <div>
+                <label for="temperature">Temperature</label>
+                <input type="number" step="0.01" id="temperature" name="temperature" value="{{ '%.2f' % temperature }}">
+            </div>
+            <div>
+                <label for="top_p">Top P</label>
+                <input type="number" step="0.01" id="top_p" name="top_p" value="{{ '%.2f' % top_p }}">
+            </div>
+            <div>
+                <label for="top_k">Top K</label>
+                <input type="number" id="top_k" name="top_k" value="{{ top_k }}">
+            </div>
+            <div>
+                <label for="base_url">Ollama 地址</label>
+                <input type="text" id="base_url" name="base_url" value="{{ base_url }}">
+            </div>
+            <div>
+                <label for="endpoint">API 路径</label>
+                <input type="text" id="endpoint" name="endpoint" value="{{ endpoint }}">
+            </div>
+        </div>
+
+        <div class="submit-row" style="margin-top: 20px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button type="submit">生成越狱提示词</button>
+        </div>
+    </form>
+
+    {% if errors %}
+        {% for msg in errors %}
+            <div class="message error">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+    {% if infos %}
+        {% for msg in infos %}
+            <div class="message info">{{ msg }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="export-row" {% if not generated and not ollama_result %}style="display:none;"{% endif %}>
+        <button type="button" id="export-all">导出全部结果</button>
+    </div>
+
+    <div class="results">
+        {% for item in generated %}
+            <div class="result-card">
+                <div class="card-actions">
+                    <button type="button" class="copy-btn" data-content="{{ item.content | e }}">复制</button>
+                </div>
+                <h3>{{ item.label }}</h3>
+                <pre>{{ item.content }}</pre>
+            </div>
+        {% endfor %}
+
+        {% if ollama_result %}
+            <div class="result-card">
+                <div class="card-actions">
+                    <button type="button" class="copy-btn" data-content="{{ ollama_result.content | e }}">复制</button>
+                </div>
+                <h3>{{ ollama_result.label }}</h3>
+                <pre>{{ ollama_result.content }}</pre>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="history">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin:0; font-size:1.1rem;">历史记录</h2>
+            <button type="button" id="clear-history" style="background:#ef4444; padding:8px 16px; border-radius:8px;">清空</button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const historyKey = 'jailbreak_history_v1';
+    const generatedData = {{ generated|tojson }};
+    const ollamaData = {{ ollama_result|tojson }};
+    const selectedTemplates = {{ selected|tojson }};
+
+    function copyText(text){
+        navigator.clipboard.writeText(text).then(()=>{
+            console.log('copied');
+        }).catch(()=>{
+            alert('复制失败，请检查浏览器权限');
+        });
+    }
+
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => copyText(btn.dataset.content));
+    });
+
+    const exportBtn = document.getElementById('export-all');
+    if(exportBtn){
+        exportBtn.addEventListener('click', () => {
+            const chunks = [];
+            generatedData.forEach(item => {
+                chunks.push(`${item.label}\n${item.content}\n`);
+            });
+            if(ollamaData){
+                chunks.push(`${ollamaData.label}\n${ollamaData.content}`);
+            }
+            copyText(chunks.join('\n----------------------\n'));
+            alert('已复制全部结果');
+        });
+    }
+
+    function loadHistory(){
+        try {
+            return JSON.parse(localStorage.getItem(historyKey) || '[]');
+        } catch (err){
+            return [];
+        }
+    }
+
+    function saveHistory(entry){
+        const history = loadHistory();
+        history.unshift(entry);
+        while(history.length > 5){ history.pop(); }
+        localStorage.setItem(historyKey, JSON.stringify(history));
+    }
+
+    function renderHistory(){
+        const container = document.getElementById('history-list');
+        const history = loadHistory();
+        if(!container) return;
+        container.innerHTML = '';
+        history.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div style="font-size:0.85rem; color:#94a3b8;">${new Date(item.time).toLocaleString()} · 模板:${item.templates.join(', ') || '全部'}</div>
+                <div style="margin:8px 0;">${item.prompt.slice(0,80)}${item.prompt.length>80?'...':''}</div>
+                <button type="button" data-index="${index}">加载</button>
+            `;
+            container.appendChild(div);
+        });
+        container.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => fillFromHistory(parseInt(btn.dataset.index,10)));
+        });
+    }
+
+    function fillFromHistory(index){
+        const history = loadHistory();
+        const entry = history[index];
+        if(!entry) return;
+        document.getElementById('raw_prompt').value = entry.prompt;
+        document.querySelectorAll('input[name="templates"]').forEach(box => {
+            box.checked = entry.templates.length === 0 ? false : entry.templates.includes(box.value);
+        });
+    }
+
+    document.getElementById('clear-history').addEventListener('click', () => {
+        localStorage.removeItem(historyKey);
+        renderHistory();
+    });
+
+    if(generatedData.length || ollamaData){
+        saveHistory({
+            time: Date.now(),
+            prompt: document.getElementById('raw_prompt').value,
+            templates: selectedTemplates,
+            count: generatedData.length + (ollamaData ? 1 : 0)
+        });
+    }
+
+    renderHistory();
+})();
+</script>
+</body>
+</html>
